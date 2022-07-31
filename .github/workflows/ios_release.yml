@@ -3,7 +3,7 @@ name: Build and deploy iOS release
 on:
   push:
     tags:
-      - 'v*'
+      - 'ios*'
 
 jobs:
   testFlight-build:
