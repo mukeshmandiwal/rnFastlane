@@ -54,6 +54,22 @@ platform :ios do
 
     private_lane :distribution_build do
         increment_build_number_in_plist(xcodeproj: './ios/rnFastlane.xcodeproj', target: 'rnFastlane')
+        create_keychain(
+            name: ENV['KEYCHAIN_NAME'],
+            password: ENV['KEYCHAIN_PASSWORD'],
+            default_keychain: true,
+            unlock: true,
+            timeout: 3600,
+            add_to_search_list: true)
+        
+        match(
+            type: 'app-stroe',
+            keychain_name: ENV["KEYCHAIN_NAME"],
+            keychain_password: ENV["KEYCHAIN_PASSWORD"],
+            readonly: true,
+            shallow_clone: true,
+            verbose: false)    
+
         gym(
             scheme: 'rnFastlane', 
             workspace: './ios/rnFastlane.xcworkspace',
@@ -65,18 +81,20 @@ platform :ios do
             export_options: {
                 method: 'app-store',
                 provisioningProfiles: {
-                    options[:app_identifier] => ENV["sigh_#{options[:app_identifier]}_#{match_type}_profile-name"],
+                    'rnFastlane' => ENV["sigh_#{options[:app_identifier]}_app-store_profile-name"],
                 }
             })
     end
 
+    desc "Release for the iOS beta"
     lane :beta do
         testflight_build
-        upload_to_testflight(username: , app_identifier: 'rnFastlane')
+        upload_to_testflight(username: ENV['APP_STORE_EMAIL'] app_identifier: 'rnFastlane')
         commit_version_bump(message: 'bump build')
         push_to_git_remote
     end
 
+    desc "Release for the iOS production"
     lane :release do
         distribution_build
         deliver
