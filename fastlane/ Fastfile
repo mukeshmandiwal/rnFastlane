@@ -1,0 +1,87 @@
+before_all do 
+    ensure_git_branch
+    ensure_git_status_clean
+    git_pull
+end
+   
+
+platform :android do 
+    desc "Release for the Android beta"
+    lane :beta do 
+        increment_version_code('app_project_dir': './andriod/app')
+        gradle(task: 'clean assembleRelease', project_dir: './andriod')
+        gradle(task: 'bundle', bundle_type: 'Release', project_dir: './andriod', properties: {
+            "android.injected.signing.store.file" => ENV['ANDROID_KEYSTORE_FILE'],
+            "android.injected.signing.store.password" => ENV['ANDROID_KEYSTORE_PASSWORD'],
+            "android.injected.signing.key.alias" => ENV['ANDROID_KEYSTORE_ALIAS'],
+            "android.injected.signing.key.password" => ENV['ANDROID_KEYSTORE_PASSWORD']
+        })
+        supply(track: 'beta', abb: './andriod/app/build/outputs/apk/app-beta-release.apk')
+    end
+
+    desc "Release for the Android production"
+    lane : release do
+        increment_version_code(app_project_dir: './android/app')
+        increment_version_name(app_project_dir: './android/app', bump_type: 'patch')
+        gradle(task: 'clean', project_dir: './android/')
+        gradle(task: 'bundle', bundle_type: 'Release', project_dir: './andriod', properties: {
+            "android.injected.signing.store.file" => ENV['ANDROID_KEYSTORE_FILE'],
+            "android.injected.signing.store.password" => ENV['ANDROID_KEYSTORE_PASSWORD'],
+            "android.injected.signing.key.alias" => ENV['ANDROID_KEYSTORE_ALIAS'],
+            "android.injected.signing.key.password" => ENV['ANDROID_KEYSTORE_PASSWORD']
+        })
+        supply(track: 'production', aab: './android/app/build/outputs/bundle/release/app_release.aab', release_status: 'draft')
+    end
+end
+
+
+platform :ios do 
+
+    private_lane :update_version do
+        app_store_version = get_app_store_version_number(bundle_id: 'rnFastlane')
+        plist_version = get_version_number_from_plist(xcodeproj: './ios/rnFastlane.xcodeproj')
+        if Gem::Version.new(plist_version.to_f) == Gem::Version.new(app_store_version.to_f)
+            increment_version_number_in_plist(xcodeproj: './ios/rnFastlane.xcodeproj', bump_type: 'minor')
+        else
+            increment_version_number_in_plist(xcodeproj: './ios/rnFastlane.xcodeproj', bump_type: 'patch')
+        end
+    end
+
+    private_lane :testflight_build do 
+        increment_build_number_in_plist(xcodeproj: './ios/rnFastlane.xcodeproj', target: 'rnFastlane')
+        gym(scheme: 'rnFastlane', workspace: './ios/rnFastlane.xcworkspace')
+    end
+
+    private_lane :distribution_build do
+        increment_build_number_in_plist(xcodeproj: './ios/rnFastlane.xcodeproj', target: 'rnFastlane')
+        gym(
+            scheme: 'rnFastlane', 
+            workspace: './ios/rnFastlane.xcworkspace',
+            export_method: 'ad-hoc',
+            output_directory: "./build", 
+            configuration: 'Release',
+            output_name: "rnFastlane.ipa"
+            clean: true
+            export_options: {
+                method: 'app-store',
+                provisioningProfiles: {
+                    options[:app_identifier] => ENV["sigh_#{options[:app_identifier]}_#{match_type}_profile-name"],
+                }
+            })
+    end
+
+    lane :beta do
+        testflight_build
+        upload_to_testflight(username: , app_identifier: 'rnFastlane')
+        commit_version_bump(message: 'bump build')
+        push_to_git_remote
+    end
+
+    lane :release do
+        distribution_build
+        deliver
+        commit_version_bump(message: 'bump build')
+        push_to_git_remote
+    end
+
+end
