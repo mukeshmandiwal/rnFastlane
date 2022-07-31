@@ -1,8 +1,10 @@
 name: Build and deploy iOS release
+
 on:
   push:
     tags:
       - 'v*'
+
 jobs:
   testFlight-build:
     name: iOS-testFlight-build
@@ -10,61 +12,68 @@ jobs:
     strategy:
       matrix:
         node-version: [12.x]
-      steps:
-        - name: Checkout to git repository
-          uses: actions/checkout@v2
-        - uses: actions/setup-node@v1
-          with:
-            node-version: ${{ matrix.node-version }}
-        - uses: actions/setup-ruby@v1
-          with:
-          ruby-version: '2.x'
-        - name: Install npm dependencies
-          run: |
-            yarn install
-        - name: Install Fastlane
-          run: |
-            bundle install
-            bundle update fastlane
-        - name: Build and upload to TestFlight
-          run: |
-            bundle exec fastlane ios beta
-            env: 
-               APPLE_ID: ${{ secrets.APPLE_ID }}
-               APP_STORE_EMAIL: ${{ secrets.APP_STORE_EMAIL }}
-               APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-               IOS_DISTRIBUTION_CERTS_GITHUB_URL: ${{ secrets.IOS_DISTRIBUTION_CERTS_GITHUB_URL }}
-               MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+    steps:
+      - uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Checkout to git repository
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          yarn install
+      - name: Install Fastlane
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: 2.6
+      - name: Install npm dependencies
+        run: |
+          yarn install
+      - name: Install Fastlane
+        run: |
+          bundle install
+          bundle update fastlane
+      - name: Build and upload to TestFlight
+        run: |
+          bundle exec fastlane ios beta
+          env: 
+             APPLE_ID: ${{ secrets.APPLE_ID }}
+             APP_STORE_EMAIL: ${{ secrets.APP_STORE_EMAIL }}
+             APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+             IOS_DISTRIBUTION_CERTS_GITHUB_URL: ${{ secrets.IOS_DISTRIBUTION_CERTS_GITHUB_URL }}
+             MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
 
-  appstore-release:
-    name: iOS-appstore-release
+  release-build:
+    name: iOS-testFlight-build
     runs-on: macos-latest
     strategy:
       matrix:
         node-version: [12.x]
-      steps:
-        - name: Checkout to git repository
-          uses: actions/checkout@v2
-        - uses: actions/setup-node@v1
-          with:
-            node-version: ${{ matrix.node-version }}
-        - uses: actions/setup-ruby@v1
-          with:
-          ruby-version: '2.x'
-        - name: Install npm dependencies
-          run: |
-            yarn install
-        - name: Install Fastlane
-          run: |
-            bundle install
-            bundle update fastlane
-        - name: Build and upload to AppStore
-          run: |
-            bundle exec fastlane ios release
-            env: 
-               APPLE_ID: ${{ secrets.APPLE_ID }}
-               APP_STORE_EMAIL: ${{ secrets.APP_STORE_EMAIL }}
-               APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-               IOS_DISTRIBUTION_CERTS_GITHUB_URL: ${{ secrets.IOS_DISTRIBUTION_CERTS_GITHUB_URL }}
-               MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-               KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+    steps:
+      - uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Checkout to git repository
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          yarn install
+      - name: Install Fastlane
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: 2.6
+      - name: Install npm dependencies
+        run: |
+          yarn install
+      - name: Install Fastlane
+        run: |
+          bundle install
+          bundle update fastlane
+      - name: Build and upload to TestFlight
+        run: |
+          bundle exec fastlane ios beta
+          env: 
+             APPLE_ID: ${{ secrets.APPLE_ID }}
+             APP_STORE_EMAIL: ${{ secrets.APP_STORE_EMAIL }}
+             APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+             IOS_DISTRIBUTION_CERTS_GITHUB_URL: ${{ secrets.IOS_DISTRIBUTION_CERTS_GITHUB_URL }}
+             MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
