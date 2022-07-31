@@ -9,13 +9,8 @@ platform :android do
     desc "Release for the Android beta"
     lane :beta do 
         increment_version_code('app_project_dir': './andriod/app')
-        gradle(task: 'clean assembleRelease', project_dir: './andriod')
-        gradle(task: 'bundle', bundle_type: 'Release', project_dir: './andriod', properties: {
-            "android.injected.signing.store.file" => ENV['ANDROID_KEYSTORE_FILE'],
-            "android.injected.signing.store.password" => ENV['ANDROID_KEYSTORE_PASSWORD'],
-            "android.injected.signing.key.alias" => ENV['ANDROID_KEYSTORE_ALIAS'],
-            "android.injected.signing.key.password" => ENV['ANDROID_KEYSTORE_PASSWORD']
-        })
+        gradle(task: 'clean', project_dir: './andriod')
+        gradle(task: 'bundle', bundle_type: 'Release', project_dir: './andriod')
         supply(track: 'beta', abb: './andriod/app/build/outputs/apk/app-beta-release.apk')
     end
 
